@@ -1,64 +1,54 @@
-name: MacOS Build
+name: Build macOS Application
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - master
   pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:
+    branches:
+      - master
 
 jobs:
-  build:
+  build-macos:
     runs-on: macos-latest
-    
+
     steps:
-      - name: Checkout code
+      - name: Checkout source code
         uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '5.15.2'
-          modules: 'qtwebengine'
-          
-      - name: Install dependencies
+
+      - name: Install Homebrew
         run: |
-          brew install cmake
-          brew install sdl2
-          brew install ffmpeg
-          brew install opus
-          
-      - name: Debug Info
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> $HOME/.bash_profile
+          eval "$(/opt/homebrew/bin/brew shellenv)"
+
+      - name: Install Dependencies
         run: |
-          pwd
-          ls -la
-          echo "Current directory: $PWD"
-          echo "Qt5_DIR: $Qt5_DIR"
-          
-      - name: Configure
+          brew update
+          brew install qt
+          brew install cmake # 如果使用cmake，则需要安装
+          # 如果有其他依赖，请在这里添加
+
+      - name: Set up Qt environment variables
         run: |
-          # 确保在正确的目录中
-          mkdir -p build
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=Release \
-                -DQT_DIR="${Qt5_DIR}" \
-                -DCMAKE_PREFIX_PATH="${Qt5_DIR}" \
-                ..
-          
-      - name: Build
+          echo "QT_DIR=$(brew --prefix qt)" >> $GITHUB_ENV
+          echo "$QT_DIR/bin" >> $GITHUB_PATH
+
+      - name: Build Project
+        env:
+          QT_DIR: ${{ env.QT_DIR }}
         run: |
-          cd build
+          mkdir build && cd build
+          qmake ../moonlight-qt.pro
           make -j$(sysctl -n hw.ncpu)
-          
-      - name: Create App Bundle
+
+      - name: Package Application
         run: |
           cd build
-          make package
-          
-      - name: Upload artifact
+          macdeployqt moonlight-qt.app
+
+      - name: Archive Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: Moonlight-Qt-MacOS
-          path: build/Moonlight.dmg
+          name: moonlight-qt-macOS
+          path: build/moonlight-qt.app
