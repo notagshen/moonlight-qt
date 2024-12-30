@@ -16,7 +16,7 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v3
         with:
-          submodules: recursive  # 添加此行，递归拉取子模块
+          submodules: recursive  # 递归拉取子模块
 
       - name: Install Homebrew
         run: |
@@ -47,10 +47,10 @@ jobs:
       - name: Package Application
         run: |
           cd build
-          macdeployqt moonlight-qt.app
+          macdeployqt Moonlight.app
 
       - name: Archive Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: moonlight-qt-macOS
-          path: build/moonlight-qt.app
+          path: build/Moonlight.app
