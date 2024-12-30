@@ -44,13 +44,14 @@ jobs:
           qmake ../moonlight-qt.pro
           make -j$(sysctl -n hw.ncpu)
 
+
       - name: Package Application
         run: |
           cd build
-          macdeployqt Moonlight.app
-
+          macdeployqt app/Moonlight.app
+      
       - name: Archive Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: moonlight-qt-macOS
-          path: build/Moonlight.app
+          path: build/app/Moonlight.app
