@@ -1,0 +1,33 @@
+name: Build macOS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install cmake qt5 sdl2 openssl
+
+    - name: Build
+      run: |
+        mkdir build-mac
+        cd build-mac
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release --parallel 4
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: moonlight-qt-macos
+        path: build-mac/Moonlight.app # 假设构建产物是 Moonlight.app
