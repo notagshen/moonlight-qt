@@ -23,7 +23,7 @@ jobs:
       run: |
         brew update
         brew install qt@6 create-dmg # 安装 Qt 6 和 create-dmg
-        brew install --cask xcode # 安装 Xcode
+        # brew install --cask xcode # 安装 Xcode
 
     - name: Set up environment
       run: |
