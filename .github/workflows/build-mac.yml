@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-13
 
     steps:
       - name: Checkout source code
@@ -40,6 +40,8 @@ jobs:
       - name: Build Project
         env:
           QT_DIR: ${{ env.QT_DIR }}
+          MACOSX_DEPLOYMENT_TARGET: 13.0  # 设置最低部署目标版本为macOS 13.0
+
         run: |
           mkdir build && cd build
           qmake ../moonlight-qt.pro
