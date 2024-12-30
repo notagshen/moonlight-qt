@@ -1,48 +1,76 @@
-name: Build macOS
+name: macOS Build
 
 on:
   push:
-    branches:
-      - main  # 当 main 分支有推送时触发
+    branches: [ main ]
   pull_request:
-    branches:
-      - main  # 当 main 分支有 PR 时触发
-  workflow_dispatch:  # 允许手动触发
+    branches: [ main ]
+  tags:
+    - 'v*'
 
 jobs:
-  build-macos:
-    runs-on: macos-latest  # 使用最新的 macOS 虚拟机
+  build:
+    runs-on: macos-latest
+    
+    env:
+      QT_VERSION: '5.15.2'
 
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v3
       with:
-        submodules: recursive  # 递归拉取子模块
-
-    - name: Install dependencies
+        fetch-depth: 0
+        submodules: recursive
+      
+    - name: Cache Qt
+      id: cache-qt
+      uses: actions/cache@v3
+      with:
+        path: ${{ runner.workspace }}/Qt
+        key: ${{ runner.os }}-qt-${{ env.QT_VERSION }}
+        
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: ${{ env.QT_VERSION }}
+        cache: true
+        
+    - name: Install Dependencies
       run: |
-        brew update
-        brew install qt@6 create-dmg # 安装 Qt 6 和 create-dmg
-        # brew install --cask xcode # 安装 Xcode
-
-    - name: Set up environment
+        brew install cmake
+        brew install sdl2
+        brew install openssl
+        brew install opus
+        
+    - name: Set Version
       run: |
-        echo "/usr/local/opt/qt@6/bin" >> $GITHUB_PATH  # 将 Qt 6 的 bin 目录添加到 PATH
-
-    - name: Build Moonlight-Qt
+        echo "VERSION=$(git describe --tags)" >> $GITHUB_ENV
+        
+    - name: Configure CMake
       run: |
-        mkdir build-mac
-        cd build-mac
-        qmake6 ../moonlight-qt.pro -spec macx-clang CONFIG+=release # 使用 qmake6 和 release 配置
-        make -j$(sysctl -n hw.ncpu)  # 使用所有可用的 CPU 核心进行编译
-
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        
+    - name: Build
+      run: |
+        cd build
+        make -j$(sysctl -n hw.ncpu)
+        
     - name: Create DMG
       run: |
-        cd build-mac
-        macdeployqt Moonlight.app -dmg  # 使用 macdeployqt 创建 DMG 文件
-
-    - name: Upload Artifact
+        cd build
+        make package
+        
+    - name: Upload Build Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: Moonlight-Qt-macOS.dmg  # 上传的构建产物名称
-        path: build-mac/Moonlight.dmg  # DMG 文件的路径
+        name: moonlight-qt-macos-${{ env.VERSION }}
+        path: build/Moonlight.dmg
+        
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: build/Moonlight.dmg
+        name: Release ${{ env.VERSION }}
