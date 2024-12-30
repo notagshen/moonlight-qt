@@ -1,76 +1,56 @@
-name: macOS Build
+name: MacOS Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
-  tags:
-    - 'v*'
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-latest
     
-    env:
-      QT_VERSION: '5.15.2'
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        submodules: recursive
-      
-    - name: Cache Qt
-      id: cache-qt
-      uses: actions/cache@v3
-      with:
-        path: ${{ runner.workspace }}/Qt
-        key: ${{ runner.os }}-qt-${{ env.QT_VERSION }}
-        
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v3
-      with:
-        version: ${{ env.QT_VERSION }}
-        cache: true
-        
-    - name: Install Dependencies
-      run: |
-        brew install cmake
-        brew install sdl2
-        brew install openssl
-        brew install opus
-        
-    - name: Set Version
-      run: |
-        echo "VERSION=$(git describe --tags)" >> $GITHUB_ENV
-        
-    - name: Configure CMake
-      run: |
-        mkdir build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release
-        
-    - name: Build
-      run: |
-        cd build
-        make -j$(sysctl -n hw.ncpu)
-        
-    - name: Create DMG
-      run: |
-        cd build
-        make package
-        
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: moonlight-qt-macos-${{ env.VERSION }}
-        path: build/Moonlight.dmg
-        
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: build/Moonlight.dmg
-        name: Release ${{ env.VERSION }}
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '5.15.2'
+          modules: 'qtwebengine'
+          
+      - name: Install dependencies
+        run: |
+          brew install cmake
+          brew install sdl2
+          brew install ffmpeg
+          brew install opus
+          
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DQT_DIR=$Qt5_DIR \
+            -DCMAKE_PREFIX_PATH=$Qt5_DIR
+            
+      - name: Build
+        run: |
+          cd build
+          make -j$(sysctl -n hw.ncpu)
+          
+      - name: Create App Bundle
+        run: |
+          cd build
+          make package
+          
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Moonlight-Qt-MacOS
+          path: build/Moonlight.dmg
