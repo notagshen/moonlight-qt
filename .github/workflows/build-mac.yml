@@ -30,15 +30,23 @@ jobs:
           brew install ffmpeg
           brew install opus
           
+      - name: Debug Info
+        run: |
+          pwd
+          ls -la
+          echo "Current directory: $PWD"
+          echo "Qt5_DIR: $Qt5_DIR"
+          
       - name: Configure
         run: |
-          mkdir build
+          # 确保在正确的目录中
+          mkdir -p build
           cd build
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DQT_DIR=$Qt5_DIR \
-            -DCMAKE_PREFIX_PATH=$Qt5_DIR
-            
+          cmake -DCMAKE_BUILD_TYPE=Release \
+                -DQT_DIR="${Qt5_DIR}" \
+                -DCMAKE_PREFIX_PATH="${Qt5_DIR}" \
+                ..
+          
       - name: Build
         run: |
           cd build
