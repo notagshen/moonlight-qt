@@ -29,6 +29,7 @@ jobs:
           brew update
           brew install qt
           brew install cmake # 如果使用cmake，则需要安装
+          brew install create-dmg # 安装用于创建dmg的工具
           # 如果有其他依赖，请在这里添加
 
       - name: Set up Qt environment variables
@@ -49,8 +50,23 @@ jobs:
           cd build
           macdeployqt app/Moonlight.app
 
+      - name: Create DMG Package
+        run: |
+          cd build
+          mkdir -p installer
+          create-dmg \
+            --volname "Moonlight Installer" \
+            --volicon "app/Moonlight.app/Contents/Resources/moonlight.icns" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --app-drop-link 420 205 \
+            --icon "Moonlight.app" 180 205 \
+            "installer/Moonlight.dmg" \
+            "app/Moonlight.app"
+
       - name: Archive Artifacts
         uses: actions/upload-artifact@v3
         with:
           name: moonlight-qt-macOS
-          path: build/app/Moonlight.app
+          path: build/installer/Moonlight.dmg
